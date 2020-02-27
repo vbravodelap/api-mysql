@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { Note } from './Note';
+import { Task } from './Task';
 
 @Entity()
 export class User {
@@ -14,5 +15,8 @@ export class User {
     lastName: string;
 
     @OneToMany(type => Note, note => note.user)
-    notes: Note[]
+    notes: Note[];
+
+    @OneToMany(type => Task, task => task.user)
+    tasks: Task[];
 }

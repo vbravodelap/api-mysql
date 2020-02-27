@@ -3,7 +3,7 @@ import { getRepository } from 'typeorm';
 import { User } from '../entity/User';    
 
 export const getUsers = async (req: Request, res: Response): Promise<Response> => {
-    const users = await getRepository(User).find({ relations: ["notes"] });
+    const users = await getRepository(User).find();
     return res.json(users);
 }
 
@@ -33,4 +33,15 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
 export const deleteUser = async (req: Request, res: Response): Promise<Response> => {
     const user = await getRepository(User).delete({ id: req.params.id });
     return res.json(user);
+}
+
+export const getNotes = async (req: Request, res: Response): Promise<Response> => {
+    const user = await getRepository(User).findOne({ id: req.params.id }, { relations: ["notes"] });
+
+    return res.json(user?.notes);
+}
+
+export const getTasks = async(req: Request, res: Response): Promise<Response> => {
+    const user = await getRepository(User).findOne({ id: req.params.id }, { relations: ["tasks"] });
+    return res.json(user?.tasks);
 }
