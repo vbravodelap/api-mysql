@@ -13,6 +13,9 @@ import taskRoutes from './routes/task.routes';
 const app = express();
 createConnection();
 
+const config = require('./configs/config');
+app.set('secret_key', config.secret_key);
+
 // Middlewares
 app.use(cors());
 app.use(morgan('dev'));

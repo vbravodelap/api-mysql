@@ -1,6 +1,10 @@
 import { Request, Response } from 'express'
 import { getRepository } from 'typeorm';
+import jwt from 'jsonwebtoken';
 import { User } from '../entity/User';    
+import bcrypt from 'bcrypt';
+
+const config = require('../configs/config');
 
 export const getUsers = async (req: Request, res: Response): Promise<Response> => {
     const users = await getRepository(User).find();
@@ -12,10 +16,45 @@ export const getUser = async (req: Request, res: Response): Promise<Response> =>
     return res.json(user);
 }
 
+export const login = async (req: Request, res: Response): Promise<Response> => {
+    const user = await getRepository(User).findOne({ email: req.body.email });
+
+    if(user) {
+        const result = await bcrypt.compare(req.body.password, user.password);
+
+        if(result) {
+            const payload = {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email
+            }
+            const token = jwt.sign(user, config.secret_key, { expiresIn: 60 * 60 * 60});
+            return res.json(token);
+        }
+    }
+
+    return res.json('Error trying to login');
+}
+
 export const createUser = async (req: Request, res: Response): Promise<Response> => {
-    const newUser = getRepository(User).create(req.body);
-    const results = await getRepository(User).save(newUser);
-    return res.json(results);
+    const user = new User();
+
+    user.firstName = req.body.firstName;
+    user.lastName = req.body.lastName;
+    user.email = req.body.email;
+
+    const salt = await bcrypt.genSalt(10);
+    const password: any = await bcrypt.hash(req.body.password, salt);
+
+    user.password = password;
+
+    const newUser = await getRepository(User).save(user).catch(err => {
+        if(err.code = 'ER_DUP_ENTRY') {
+            return res.json('Este correo ya esta registrado.');
+        }
+    });
+    
+    return res.json(newUser);
 }
 
 export const updateUser = async (req: Request, res: Response): Promise<Response> => {
