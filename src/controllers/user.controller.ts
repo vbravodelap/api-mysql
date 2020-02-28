@@ -3,6 +3,7 @@ import { getRepository } from 'typeorm';
 import jwt from 'jsonwebtoken';
 import { User } from '../entity/User';    
 import bcrypt from 'bcrypt';
+import moment from 'moment';
 
 const config = require('../configs/config');
 
@@ -17,23 +18,36 @@ export const getUser = async (req: Request, res: Response): Promise<Response> =>
 }
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
-    const user = await getRepository(User).findOne({ email: req.body.email });
+    
+    let { email, password } = req.body;
+
+    const user = await getRepository(User).findOne({where: { email: email } });
 
     if(user) {
-        const result = await bcrypt.compare(req.body.password, user.password);
-
-        if(result) {
-            const payload = {
+        const result = bcrypt.compareSync(password, user.password);
+        if(result === true) {
+            const token = jwt.sign({
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email
-            }
-            const token = jwt.sign(user, config.secret_key, { expiresIn: 60 * 60 * 60});
+            }, config.secret_key, {
+                expiresIn: moment().add(1, 'day').unix()
+            });
+
             return res.json(token);
+        }else{
+            return res.json('Incorrect password')
         }
     }
 
-    return res.json('Error trying to login');
+    return res.json('User not found');
+
+}
+
+export const whoiam = (req: Request, res: Response) => {
+    const token: any = req.headers.authorization;
+    const payload = jwt.decode(token, config.secret_key);
+    return res.json(payload);
 }
 
 export const createUser = async (req: Request, res: Response): Promise<Response> => {
